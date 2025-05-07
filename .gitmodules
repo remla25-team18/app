@@ -1,6 +1,0 @@
-[submodule "app-frontend"]
-	path = app-frontend
-	url = git@github.com:remla25-team18/app-frontend.git
-[submodule "app-service"]
-	path = app-service
-	url = git@github.com:remla25-team18/app-service.git

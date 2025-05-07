@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Comment Sentiment Analysis</title>
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"
+  />
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <main>
+    <div class="container">
+      <div class="bg"></div>
+      <div class="bg bg2"></div>
+      <div class="bg bg3"></div>
+      <div>
+        <h1 class="animate__animated animate__bounce">Comment Sentiment Analysis</h1>
+      </div>
+      <section class="search-section">
+        <input id="comment-input" type="text" placeholder="Please type user comment here." />
+        <button id="submit-btn" class="primary" type="button">Analyze</button>
+      </section>
+      <section id="result" class="results">
+        <div>
+            <h4> Model Analysis: Default</h4>
+            <h4> App Version: v0.0.0 </h4>
+            <h4> Model Version: v0.0.0 </h4>
+        </div>
+      </section>
+      <section class="judgment-section">
+        <h2>Is the analysis correct?</h2>
+        <button id="feedback-yes" class="true-btn">True</button>
+        <button id="feedback-no" class="false-btn">False</button>
+      </section>
+    </div>
+  </main>
+  <script src="{{ url_for('static', filename='main.js') }}"></script>
+</body>
+</html>
