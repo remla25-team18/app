@@ -1,0 +1,67 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_TOKEN }}
+          fetch-depth: 0
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GH_TOKEN }}
+
+      - name: Set git remote env variable
+        if: ${{ !startsWith(steps.tagmsg.outputs.message, 'Bump version') }}
+        run: |
+          REMOTE_REPO="https://${GITHUB_ACTOR}:${{ secrets.GH_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git"
+          echo "remote_repo=$REMOTE_REPO" >> $GITHUB_ENV
+
+      - name: Extract version from tag
+        id: get_tag
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Build, tag and push Docker image
+        run: |
+          IMG="ghcr.io/${{ github.repository }}"
+          IMG=${IMG@L}
+          docker build --tag $IMG:${{steps.get_tag.outputs.VERSION}} .
+          docker push --all-tags $IMG   
+
+      - name: Delete previous tag
+        run: |
+          IFS='.' read -r MAJOR MINOR PATCH <<< "${{steps.get_tag.outputs.VERSION}}"
+          PREV_PATCH=$((PATCH - 1))
+          PREV_TAG="v$MAJOR.$MINOR.$PREV_PATCH"
+          
+          git tag --delete ${PREV_TAG}
+          git push "${{ env.remote_repo }}" --delete ${PREV_TAG}
+          git tag -l
+
+      - name: Update tag
+        id: updated_tag
+        run: |
+          git fetch --all
+          git checkout main
+          
+          IFS='.' read -r MAJOR MINOR PATCH <<< "${{steps.get_tag.outputs.VERSION}}"
+          NEW_PATCH=$((PATCH + 1))
+          echo "v$MAJOR.$MINOR.${NEW_PATCH}-pre" > VERSION
+          
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          
+          git add VERSION
+          git commit -m "Bump version"
+          git push origin HEAD:main
