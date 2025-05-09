@@ -1,3 +1,4 @@
 flask==2.3.2
 flask_cors==3.0.10
 requests==2.31.0
+lib-version @ git+https://github.com/remla25-team18/lib-version.git@v0.0.14
