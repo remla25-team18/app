@@ -137,3 +137,11 @@ color: white;
 .judgment-section .false-btn:hover {
 background-color: #c82333;
 }
+
+.footer-content {
+  text-align: center;
+  font-size: 0.9rem;
+  color: #666;
+  padding: 10px 0;
+  background-color: transparent;
+}
