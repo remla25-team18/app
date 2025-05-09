@@ -7,7 +7,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const feedbackNo = document.getElementById("feedback-no");
     const resultDiv = document.getElementById("result");
   
-
+    // Submit user input 
     submitButton.addEventListener("click", () => {
       const comment = inputField.value.trim();
       if (!comment) return;
@@ -22,13 +22,12 @@ document.addEventListener("DOMContentLoaded", () => {
             console.log("Backend response:", data); // Log the entire response
             resultDiv.innerHTML = `
             <h4>Model Analysis: ${data.label}</h4>
-            <h4>App Version: v0.0.0</h4>
-            <h4>Model Version: ${data.model_version}</h4>
             `;
         })
         .catch(error => console.error("Error:", error));
     });
   
+    // Send User feedback
     feedbackYes.addEventListener("click", () => sendJudgment(true));
     feedbackNo.addEventListener("click", () => sendJudgment(false));
   
@@ -48,4 +47,5 @@ document.addEventListener("DOMContentLoaded", () => {
         .then(data => console.log("Judgment submitted:", data))
         .catch(error => console.error("Error submitting judgment:", error));
     }
+
 });
