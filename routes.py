@@ -8,15 +8,15 @@ app_version = VersionUtil.get_version()
 
 # Environment variables
 FRONTEND_PORT = os.getenv("FRONTEND_PORT", "4200")
-MODEL_PORT = os.getenv("MODEL_PORT", "5050")
-DNS = os.getenv("DNS", "localhost")
+MODEL_SERVICE_PORT = os.getenv("MODEL_SERVICE_PORT", "5050")
+MODEL_SERVICE_URL = os.getenv("MODEL_SERVICE_URL", "localhost")
 
 
 @main.route("/", methods=["GET"])
 def index():
     try:
         # Fetch the model version from the /version endpoint of the model-service
-        model_service_url = f"http://{DNS}:{MODEL_PORT}/version"
+        model_service_url = f"http://{MODEL_SERVICE_URL}:{MODEL_SERVICE_PORT}/version"
         response = requests.get(model_service_url)
         response.raise_for_status()  # Raise an error for non-2xx responses
 
@@ -47,7 +47,7 @@ def user_input():
             return jsonify({"error": "Missing 'text' in request body"}), 400
 
         # Step 2: Send request to model-service
-        model_service_url = f"http://{DNS}:{MODEL_PORT}/predict"
+        model_service_url = f"http://{MODEL_SERVICE_URL}:{MODEL_SERVICE_PORT}/predict"
         model_response = requests.post(model_service_url, json={"text": user_input})
         model_response.raise_for_status()  # Raise an error for non-2xx responses
 
