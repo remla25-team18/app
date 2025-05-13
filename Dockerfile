@@ -3,7 +3,7 @@ FROM python:3.11-slim AS build
 
 # Install build dependencies
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends git gcc build-essential && \
+    apt-get install -y --no-install-recommends git && \
     rm -rf /var/lib/apt/lists/*
 
 # Install Python build dependencies
