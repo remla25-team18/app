@@ -9,7 +9,7 @@ app_version = VersionUtil.get_version()
 # Environment variables
 FRONTEND_PORT = os.getenv("FRONTEND_PORT", "4200")
 MODEL_PORT = os.getenv("MODEL_PORT", "5050")
-DNS = os.getenv("DNS", "localhost")
+DNS = os.getenv("MODEL_SERVICE_URL", "localhost")
 
 
 @main.route("/", methods=["GET"])
@@ -31,7 +31,7 @@ def index():
         "main.html",
         title="Team18 Frontend",
         app_version=app_version,
-        model_version=model_version,
+        model_service_version=model_version,
     )
 
 
