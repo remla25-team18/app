@@ -3,6 +3,7 @@ import requests
 import os
 from lib_version import VersionUtil
 import time
+from collections import defaultdict
 # import prometheus_client import Counter, Histogram
 
 main = Blueprint("main", __name__)
@@ -20,6 +21,10 @@ count_incorrect_preds = 0
 duration_pred_req = 0.0
 duration_validation_req = 0.0
 start_val_time = 0.0
+# Histogram config
+hist_buckets = [0.1, 1, 3, 5, 10]
+hist_validation_pred_req = defaultdict(int)
+
 
 @main.route("/", methods=["GET"])
 def index():
@@ -53,6 +58,7 @@ def user_input():
         global count_reqs
         global duration_pred_req
         global start_val_time
+
         count_reqs += 1
         duration_pred_req = 1
 
@@ -63,27 +69,26 @@ def user_input():
         if not user_input:
             return jsonify({"error": "Missing 'text' in request body"}), 400
 
-        ''' commented out for local testing of the metrics
         # Step 2: Send request to model-service
         model_service_url = f"http://{DNS}:{MODEL_PORT}/predict"
-        model_response = requests.post(model_service_url, json={"text": user_input})
+        # model_response = requests.post(model_service_url, json={"text": user_input})
         #model_response.raise_for_status()  # Raise an error for non-2xx responses
 
         # Step 3: Extract the prediction and model version
-        model_data = model_response.json()
-        predicted_number = model_data.get("prediction")
+        # model_data = model_response.json()
+        # predicted_number = model_data.get("prediction")
         # model_version = model_data.get("version")
 
         # Map the prediction number to a label
-        predicted_label = "Positive" if predicted_number == 1 else "Negative"
-        '''
+        # predicted_label = "Positive" if predicted_number == 1 else "Negative"
+        
         duration_pred_req = time.time() - start_dur_time
         start_val_time = time.time()
 
         # # For frontend test
-        # predicted_label = "Positive"  # Placeholder for actual prediction
+        predicted_label = "Positive"  # Placeholder for actual prediction
         # model_version = "v1.0"  # Placeholder for actual model version
-        predicted_label = "Positive"
+        
         # Step 4: Send the label and model version back to the frontend
         return jsonify({"label": predicted_label})
 
@@ -108,9 +113,15 @@ def judgment():
         global count_preds
         global count_correct_preds
         global count_incorrect_preds
+        global hist_validation_pred_req
 
         if start_val_time != 0:
             duration_validation_req = time.time() - start_val_time
+            for bucket in hist_buckets:
+                if duration_validation_req <= bucket:
+                    hist_validation_pred_req[bucket] += 1
+                    break
+            hist_validation_pred_req["+Inf"] += 1
             start_val_time = 0
 
         # Step 1: Extract the 'isCorrect' field from the request
@@ -155,6 +166,7 @@ def metrics():
     global count_incorrect_preds
     global duration_pred_req
     global duration_validation_req
+    global hist_validation_pred_req
     
     m = "# HELP count_reqs The number of requests that have been created for sentiment prediction of a review.\n"
     m += "# TYPE count_reqs counter\n"
@@ -179,6 +191,21 @@ def metrics():
     m += "# HELP duration_validation_req How long in seconds it take the person to validate the sentiment of a review.\n"
     m += "# TYPE duration_validation_req gauge\n"
     m += "duration_validation_req {}\n\n".format(duration_validation_req)
+
+    m += "# HELP hist_duration_pred_req Histogram of the duration of the prediction request.\n"
+    m += "# TYPE hist_duration_pred_req histogram\n"
+    cumulative = 0
+    
+    cumulative = 0
+    prev_bucket = 0
+    for bucket in hist_buckets:
+        cumulative += hist_validation_pred_req[bucket]
+        m += f'hist_duration_pred_req{{le="({prev_bucket}; {bucket}]"}} {cumulative}\n'
+        prev_bucket = bucket
+
+    # Add +Inf bucket
+    cumulative += hist_validation_pred_req["+Inf"]
+    m += f'hist_duration_pred_req{{le="({prev_bucket};  +Inf)"}} {cumulative}\n'
 
     print(m)
   
