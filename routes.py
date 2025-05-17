@@ -197,15 +197,14 @@ def metrics():
     cumulative = 0
     
     cumulative = 0
-    prev_bucket = 0
     for bucket in hist_buckets:
         cumulative += hist_validation_pred_req[bucket]
-        m += f'hist_duration_pred_req{{le="({prev_bucket}; {bucket}]"}} {cumulative}\n'
+        m += f'hist_duration_pred_req{{le="{bucket}"}} {cumulative}\n'
         prev_bucket = bucket
 
     # Add +Inf bucket
     cumulative += hist_validation_pred_req["+Inf"]
-    m += f'hist_duration_pred_req{{le="({prev_bucket};  +Inf)"}} {cumulative}\n'
+    m += f'hist_duration_pred_req{{le="+Inf"}} {cumulative}\n'
 
     print(m)
   
