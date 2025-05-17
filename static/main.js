@@ -6,6 +6,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const feedbackYes = document.getElementById("feedback-yes");
     const feedbackNo = document.getElementById("feedback-no");
     const resultDiv = document.getElementById("result");
+
+    feedbackYes.disabled = true;
+    feedbackNo.disabled = true;
   
     // Submit user input 
     submitButton.addEventListener("click", () => {
@@ -25,6 +28,9 @@ document.addEventListener("DOMContentLoaded", () => {
             `;
         })
         .catch(error => console.error("Error:", error));
+
+        feedbackYes.disabled = false;
+        feedbackNo.disabled = false;
     });
   
     // Send User feedback
@@ -32,6 +38,9 @@ document.addEventListener("DOMContentLoaded", () => {
     feedbackNo.addEventListener("click", () => sendJudgment(false));
   
     function sendJudgment(isCorrect) {
+      feedbackYes.disabled = true;
+      feedbackNo.disabled = true;
+
       alert(
         isCorrect
           ? "Thanks for feedback, we are happy we get you☺️"
