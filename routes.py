@@ -63,7 +63,6 @@ def user_input():
         if not user_input:
             return jsonify({"error": "Missing 'text' in request body"}), 400
 
-        ''' commented out for local testing of the metrics
         # Step 2: Send request to model-service
         model_service_url = f"http://{DNS}:{MODEL_PORT}/predict"
         model_response = requests.post(model_service_url, json={"text": user_input})
@@ -76,14 +75,14 @@ def user_input():
 
         # Map the prediction number to a label
         predicted_label = "Positive" if predicted_number == 1 else "Negative"
-        
+
         duration_pred_req = time.time() - start_dur_time
         start_val_time = time.time()
-        '''
+
         # # For frontend test
         # predicted_label = "Positive"  # Placeholder for actual prediction
         # model_version = "v1.0"  # Placeholder for actual model version
-        predicted_label = "Positive"
+        # predicted_label = "Positive"
         # Step 4: Send the label and model version back to the frontend
         return jsonify({"label": predicted_label})
 
