@@ -80,13 +80,13 @@ def user_input():
         # model_version = model_data.get("version")
 
         # Map the prediction number to a label
-        # predicted_label = "Positive" if predicted_number == 1 else "Negative"
+        predicted_label = "Positive" if predicted_number == 1 else "Negative"
         
         duration_pred_req = time.time() - start_dur_time
         start_val_time = time.time()
-
+        
         # # For frontend test
-        predicted_label = "Positive"  # Placeholder for actual prediction
+        # predicted_label = "Positive"  # Placeholder for actual prediction
         # model_version = "v1.0"  # Placeholder for actual model version
         
         # Step 4: Send the label and model version back to the frontend
@@ -140,7 +140,8 @@ def judgment():
         if is_correct:
             count_correct_preds += 1
         else:
-            count_incorrect_preds += 1
+
+         count_incorrect_preds += 1
         count_preds += 1
 
         # Step 2: Return a success response
