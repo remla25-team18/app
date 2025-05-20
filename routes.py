@@ -12,7 +12,7 @@ app_version = VersionUtil.get_version()
 # Environment variables
 FRONTEND_PORT = os.getenv("FRONTEND_PORT", "4200")
 MODEL_PORT = os.getenv("MODEL_PORT", "5050")
-DNS = os.getenv("MODEL_SERVICE_URL", "localhost")
+DNS = os.getenv("DNS", "localhost")
 
 count_reqs = 0
 count_preds = 0
