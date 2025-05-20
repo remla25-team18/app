@@ -12,4 +12,4 @@ To run the app locally using Docker, use the following commands:
     docker run -p 4200:4200 -d --name app_container app
     ```
 
-Once the container is running, you can access the app at [http://localhost:4200/](http://localhost:4200/).
+Once the container is running, you can access the app at [http://localhost:4200/](http://localhost:4200/) and metrics at [http://localhost:4200/metrics](http://localhost:4200/metrics).
