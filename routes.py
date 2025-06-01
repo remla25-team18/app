@@ -4,7 +4,6 @@ import os
 from lib_version import VersionUtil
 import time
 from collections import defaultdict
-# import prometheus_client import Counter, Histogram
 
 main = Blueprint("main", __name__)
 app_version = VersionUtil.get_version()
@@ -13,6 +12,7 @@ app_version = VersionUtil.get_version()
 FRONTEND_PORT = os.getenv("FRONTEND_PORT", "4200")
 MODEL_PORT = os.getenv("MODEL_PORT", "5050")
 DNS = os.getenv("DNS", "localhost")
+use_true_false_classes = os.getenv("USE_TRUE_FALSE_CLASSES", "true") == "true"
 
 count_reqs = 0
 count_preds = 0
@@ -44,6 +44,7 @@ def index():
     return render_template(
         "main.html",
         title="Team18 Frontend",
+        use_true_false_classes=use_true_false_classes,
         app_version=app_version,
         model_service_version=model_version,
     )
@@ -81,14 +82,14 @@ def user_input():
 
         # Map the prediction number to a label
         predicted_label = "Positive" if predicted_number == 1 else "Negative"
-        
+
         duration_pred_req = time.time() - start_dur_time
         start_val_time = time.time()
 
         # # For frontend test
         # predicted_label = "Positive"  # Placeholder for actual prediction
         # model_version = "v1.0"  # Placeholder for actual model version
-        
+
         # Step 4: Send the label and model version back to the frontend
         return jsonify({"label": predicted_label})
 
@@ -136,7 +137,7 @@ def judgment():
                 ),
                 400,
             )
-        
+
         if is_correct:
             count_correct_preds += 1
         else:
@@ -158,7 +159,7 @@ def judgment():
         return jsonify({"error": "Internal server error"}), 500
 
 
-@main.route('/metrics', methods=['GET'])
+@main.route("/metrics", methods=["GET"])
 def metrics():
     global count_reqs
     global count_preds
@@ -167,7 +168,7 @@ def metrics():
     global duration_pred_req
     global duration_validation_req
     global hist_validation_pred_req
-    
+
     m = "# HELP count_reqs The number of requests that have been created for sentiment prediction of a review.\n"
     m += "# TYPE count_reqs counter\n"
     m += "count_reqs {}\n\n".format(count_reqs)
@@ -195,7 +196,7 @@ def metrics():
     m += "# HELP hist_duration_pred_req Histogram of the duration of the prediction request.\n"
     m += "# TYPE hist_duration_pred_req histogram\n"
     cumulative = 0
-    
+
     cumulative = 0
     for bucket in hist_buckets:
         cumulative += hist_validation_pred_req[bucket]
@@ -207,5 +208,5 @@ def metrics():
     m += f'hist_duration_pred_req{{le="+Inf"}} {cumulative}\n'
 
     print(m)
-  
+
     return Response(m, mimetype="text/plain")

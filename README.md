@@ -1,15 +1,37 @@
-# Set up
+# 🏨 App – Restaurant Sentiment Analysis
 
-To run the app locally using Docker, use the following commands:
+This is a web application for restaurant review sentiment analysis. It provides a REST API and a simple web interface for analyzing user comments.
 
-1. Build a Docker image:
-    ```bash
-    docker build -t app .
-    ```
+### ✨ Features
 
-2. Run the Docker container and expose the port:
-    ```bash
-    docker run -p 4200:4200 -d --name app_container app
-    ```
+* Sentiment analysis of restaurant reviews
+* REST API and web UI
+* Prometheus-compatible metrics endpoint for monitoring
 
-Once the container is running, you can access the app at [http://localhost:4200/](http://localhost:4200/) and metrics at [http://localhost:4200/metrics](http://localhost:4200/metrics).
+### 💻 Running Locally with Docker
+
+1. **Build the Docker image:**
+
+   ```bash
+   docker build -t team18-app .
+   ```
+
+2. **Run the Docker container:**
+
+   ```bash
+   docker run -p 4200:4200 -d --name team18-app-container team18-app
+   ```
+
+3. **Access the application:**
+
+   * Web UI: [http://localhost:4200](http://localhost:4200)
+   * Metrics: [http://localhost:4200/metrics](http://localhost:4200/metrics)
+
+4. **Clean up environment after use:**
+
+   ```bash
+   docker ps -a              # Find container ID or name
+   docker stop <container>  # Stop the container
+   docker rm <container>    # Remove the container
+   docker rmi team18-app  # Optionally remove the image
+   ```
