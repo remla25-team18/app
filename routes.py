@@ -13,6 +13,7 @@ FRONTEND_PORT = os.getenv("FRONTEND_PORT", "4200")
 MODEL_PORT = os.getenv("MODEL_PORT", "5050")
 DNS = os.getenv("DNS", "localhost")
 use_true_false_classes = os.getenv("USE_TRUE_FALSE_CLASSES", "true") == "true"
+app_UI_version = "v2.0" if use_true_false_classes else "v1.0"
 
 count_reqs = 0
 count_preds = 0
@@ -191,7 +192,7 @@ def metrics():
 
     m += "# HELP duration_validation_req How long in seconds it take the person to validate the sentiment of a review.\n"
     m += "# TYPE duration_validation_req gauge\n"
-    m += "duration_validation_req {}\n\n".format(duration_validation_req)
+    m += f'duration_validation_req{{version="{app_UI_version}"}} {duration_validation_req}\n'
 
     m += "# HELP hist_duration_pred_req Histogram of the duration of the prediction request.\n"
     m += "# TYPE hist_duration_pred_req histogram\n"
@@ -200,12 +201,12 @@ def metrics():
     cumulative = 0
     for bucket in hist_buckets:
         cumulative += hist_validation_pred_req[bucket]
-        m += f'hist_duration_pred_req{{le="{bucket}"}} {cumulative}\n'
+        m += f'hist_duration_pred_req{{le="{bucket}", version="{app_UI_version}"}} {cumulative}\n'
         prev_bucket = bucket
 
     # Add +Inf bucket
     cumulative += hist_validation_pred_req["+Inf"]
-    m += f'hist_duration_pred_req{{le="+Inf"}} {cumulative}\n'
+    m += f'hist_duration_pred_req{{le="+Inf", version="{app_UI_version}"}} {cumulative}\n'
 
     print(m)
 
