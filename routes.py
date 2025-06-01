@@ -71,13 +71,13 @@ def user_input():
 
         # Step 2: Send request to model-service
         model_service_url = f"http://{DNS}:{MODEL_PORT}/predict"
-        # model_response = requests.post(model_service_url, json={"text": user_input})
-        #model_response.raise_for_status()  # Raise an error for non-2xx responses
+        model_response = requests.post(model_service_url, json={"text": user_input})
+        model_response.raise_for_status()  # Raise an error for non-2xx responses
 
         # Step 3: Extract the prediction and model version
-        # model_data = model_response.json()
-        # predicted_number = model_data.get("prediction")
-        # model_version = model_data.get("version")
+        model_data = model_response.json()
+        predicted_number = model_data.get("prediction")
+        model_version = model_data.get("version")
 
         # Map the prediction number to a label
         predicted_label = "Positive" if predicted_number == 1 else "Negative"
