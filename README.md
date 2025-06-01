@@ -30,8 +30,7 @@ This is a web application for restaurant review sentiment analysis. It provides 
 4. **Clean up environment after use:**
 
    ```bash
-   docker ps -a              # Find container ID or name
-   docker stop <container>  # Stop the container
-   docker rm <container>    # Remove the container
+   docker stop team18-app-container  # Stop the container
+   docker rm team18-app-container    # Remove the container
    docker rmi team18-app  # Optionally remove the image
    ```

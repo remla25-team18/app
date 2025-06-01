@@ -192,7 +192,7 @@ def metrics():
 
     m += "# HELP duration_validation_req How long in seconds it take the person to validate the sentiment of a review.\n"
     m += "# TYPE duration_validation_req gauge\n"
-    m += f'duration_validation_req{{version="{app_UI_version}"}} {duration_validation_req}\n'
+    m += f'duration_validation_req{{version="{app_UI_version}"}} {duration_validation_req}\n\n'
 
     m += "# HELP hist_duration_pred_req Histogram of the duration of the prediction request.\n"
     m += "# TYPE hist_duration_pred_req histogram\n"
