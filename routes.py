@@ -84,7 +84,7 @@ def user_input():
         
         duration_pred_req = time.time() - start_dur_time
         start_val_time = time.time()
-
+        
         # # For frontend test
         # predicted_label = "Positive"  # Placeholder for actual prediction
         # model_version = "v1.0"  # Placeholder for actual model version
@@ -140,7 +140,8 @@ def judgment():
         if is_correct:
             count_correct_preds += 1
         else:
-            count_incorrect_preds += 1
+
+         count_incorrect_preds += 1
         count_preds += 1
 
         # Step 2: Return a success response
