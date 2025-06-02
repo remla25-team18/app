@@ -10,10 +10,17 @@ This is a web application for restaurant review sentiment analysis. It provides 
 
 ### 💻 Running Locally with Docker
 
-1. **Build the Docker image:**
+1. **Build the Docker image with the version you want to test:**
+   
+   - Condition A: Green/Red buttons
+   - Condition B: Yellow/Yellow buttons
+  
+   This can be set by modifying the `USE_TRUE_FALSE_CLASSES` varible in `.env`: 
+   - `USE_TRUE_FALSE_CLASSES = True` for Condition A
+   -  `USE_TRUE_FALSE_CLASSES = False` for Condition B
 
    ```bash
-   docker build -t team18-app .
+   docker build -t team18-app --build-arg USE_TRUE_FALSE_CLASSES=True .
    ```
 
 2. **Run the Docker container:**
