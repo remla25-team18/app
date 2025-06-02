@@ -138,6 +138,21 @@ color: white;
 background-color: #c82333;
 }
 
+.judgment-section .feedback-btn {
+  background-color: #ffc107;
+  color: #212529;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  font-size: 16px;
+  cursor: pointer;
+  margin: 0 10px;
+}
+
+.judgment-section .feedback-btn:hover {
+  background-color: #e0a800;
+}
+
 .footer-content {
   text-align: center;
   font-size: 0.9rem;

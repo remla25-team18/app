@@ -30,8 +30,14 @@
       </section>
       <section class="judgment-section">
         <h2>Is the analysis correct?</h2>
-        <button id="feedback-yes" class="true-btn">True</button>
-        <button id="feedback-no" class="false-btn">False</button>
+        <button id="feedback-yes"
+          class="{% if use_true_false_classes %}true-btn{% else %}feedback-btn{% endif %}">
+          True
+        </button>
+        <button id="feedback-no"
+          class="{% if use_true_false_classes %}false-btn{% else %}feedback-btn{% endif %}">
+          False
+        </button>
       </section>
     </div>
   </main>
