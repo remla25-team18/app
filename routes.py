@@ -173,23 +173,23 @@ def metrics():
 
     m = "# HELP count_reqs The number of requests that have been created for sentiment prediction of a review.\n"
     m += "# TYPE count_reqs counter\n"
-    m += "count_reqs {}\n\n".format(count_reqs)
+    m += f'count_reqs{{version="{app_UI_version}"}} {count_reqs}\n\n'
 
     m += "# HELP count_preds The number of sentiment analysis predictions that have been created.\n"
     m += "# TYPE count_preds counter\n"
-    m += "count_preds {}\n\n".format(count_preds)
+    m += f'count_preds{{version="{app_UI_version}"}} {count_preds}\n\n'
 
     m += "# HELP count_correct_preds The number of correct sentiment analysis predictions according to the user.\n"
     m += "# TYPE count_correct_preds counter\n"
-    m += "count_correct_preds {}\n\n".format(count_correct_preds)
+    m += f'count_correct_preds{{version="{app_UI_version}"}} {count_correct_preds}\n\n'
 
     m += "# HELP count_incorrect_preds The number of incorrect sentiment analysis predictions  according to the user.\n"
     m += "# TYPE count_incorrect_preds counter\n"
-    m += "count_incorrect_preds {}\n\n".format(count_incorrect_preds)
+    m += f'count_incorrect_preds{{version="{app_UI_version}"}} {count_incorrect_preds}\n\n'
 
     m += "# HELP duration_pred_req How long in seconds it takes predict the sentiment of a review.\n"
     m += "# TYPE duration_pred_req gauge\n"
-    m += "duration_pred_req {}\n\n".format(duration_pred_req)
+    m += f'duration_pred_req{{version="{app_UI_version}"}} {duration_pred_req}\n\n'
 
     m += "# HELP duration_validation_req How long in seconds it take the person to validate the sentiment of a review.\n"
     m += "# TYPE duration_validation_req gauge\n"
