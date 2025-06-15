@@ -5,9 +5,13 @@ from lib_version import VersionUtil
 import time
 from collections import defaultdict
 from cachetools import TTLCache
+import logging
 
 main = Blueprint("main", __name__)
 app_version = VersionUtil.get_version()
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Environment variables
 FRONTEND_PORT = os.getenv("FRONTEND_PORT", "4200")
@@ -75,7 +79,10 @@ def user_input():
             return jsonify({"error": "Missing 'text' in request body"}), 400
         
         session_id = request.cookies.get("sessionId")
-        
+
+        # logger.info(f"Got session_id from cookie: {session_id}")
+        # logger.info(f"All session_start_times keys: {list(session_start_times.keys())}")
+
         # Step 2: Send request to model-service
         model_service_url = f"http://{DNS}:{MODEL_PORT}/predict"
         model_response = requests.post(model_service_url, json={"text": user_input})
@@ -86,11 +93,15 @@ def user_input():
         predicted_number = model_data.get("prediction")
         model_version = model_data.get("version")
 
+
         # Map the prediction number to a label
         predicted_label = "Positive" if predicted_number == 1 else "Negative"
-
+        
         duration_pred_req = time.time() - start_dur_time
         session_start_times[session_id] = time.time()
+
+        # logger.info(f"Add entry: {list(session_start_times.keys())}")
+        # logger.info(f"Start time: {session_start_times[session_id]}")
         
         # # For frontend test
         # predicted_label = "Positive"  # Placeholder for actual prediction
@@ -134,16 +145,22 @@ def judgment():
             )
      
         session_id = request.cookies.get("sessionId")
-        
+
+        # logger.info(f"Confirm session_id from cookie: {session_id}")
+
         # Check if session start time exists
-        start_time = session_start_times.pop(session_id, None)
+        start_time = session_start_times.get(session_id)
         if start_time is None:
             return jsonify({
                 "status": "error",
                 "message": "Session expired or invalid."
             }), 400
         
-        validation_durations[session_id] = time.time() - start_time
+        now = time.time()
+        validation_durations[session_id] = now - start_time
+        # logger.info(f"now: {now}")
+        # logger.info(f"start time: {start_time}")
+        # logger.info(f"duration: {validation_durations[session_id]}")
 
         for bucket in hist_buckets:
             if validation_durations[session_id] <= bucket:
@@ -205,7 +222,12 @@ def metrics():
 
     m += "# HELP duration_validation_req How long in seconds it take the person to validate the sentiment of a review.\n"
     m += "# TYPE duration_validation_req gauge\n"
-    m += f'duration_validation_req{{version="{app_UI_version}"}} {validation_durations[session_id]}\n\n'
+
+    duration_val = validation_durations.get(session_id)
+    if duration_val is not None:
+        m += f'duration_validation_req{{version="{app_UI_version}"}} {duration_val}\n\n'
+    else:
+        m += f'duration_validation_req{{version="{app_UI_version}"}} 0.0\n\n'
 
     m += "# HELP hist_duration_pred_req Histogram of the duration of the prediction request.\n"
     m += "# TYPE hist_duration_pred_req histogram\n"

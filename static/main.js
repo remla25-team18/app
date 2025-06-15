@@ -7,10 +7,14 @@ document.addEventListener("DOMContentLoaded", () => {
     const feedbackNo = document.getElementById("feedback-no");
     const resultDiv = document.getElementById("result");
 
+    let sessionId;
+
     if (!document.cookie.includes("sessionId")) {
-      const sessionId = crypto.randomUUID();
+      sessionId = crypto.randomUUID();
       document.cookie = `sessionId=${sessionId}; path=/; SameSite=Lax`;
     }
+
+    console.log(sessionId);
 
     feedbackYes.disabled = true;
     feedbackNo.disabled = true;
@@ -23,6 +27,7 @@ document.addEventListener("DOMContentLoaded", () => {
       fetch("/userInput", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ text: comment })
       })
         .then(response => response.json())
@@ -55,6 +60,7 @@ document.addEventListener("DOMContentLoaded", () => {
       fetch("/judgment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ isCorrect })
       })
         .then(response => response.json())

@@ -4,7 +4,7 @@ from flask_cors import CORS
 
 def create_app():
     app = Flask(__name__, static_folder="static", template_folder="templates")
-    CORS(app)
+    CORS(app, supports_credentials=True)
 
     from routes import main
 
