@@ -4,6 +4,7 @@ import os
 from lib_version import VersionUtil
 import time
 from collections import defaultdict
+from cachetools import TTLCache
 
 main = Blueprint("main", __name__)
 app_version = VersionUtil.get_version()
@@ -20,11 +21,14 @@ count_preds = 0
 count_correct_preds = 0
 count_incorrect_preds = 0
 duration_pred_req = 0.0
-duration_validation_req = 0.0
-start_val_time = 0.0
 # Histogram config
 hist_buckets = [0.1, 1, 3, 5, 10]
 hist_validation_pred_req = defaultdict(int)
+
+# Cache to track start times and prediction validation duration 
+# by session_id (auto-expire after 30 min, can hold up to 20 sessions)
+session_start_times = TTLCache(maxsize=20, ttl=1800)
+validation_durations = TTLCache(maxsize=20, ttl=1800)
 
 
 @main.route("/", methods=["GET"])
@@ -59,7 +63,6 @@ def user_input():
     try:
         global count_reqs
         global duration_pred_req
-        global start_val_time
 
         count_reqs += 1
         duration_pred_req = 1
@@ -70,7 +73,9 @@ def user_input():
         user_input = request.json.get("text")
         if not user_input:
             return jsonify({"error": "Missing 'text' in request body"}), 400
-
+        
+        session_id = request.cookies.get("sessionId")
+        
         # Step 2: Send request to model-service
         model_service_url = f"http://{DNS}:{MODEL_PORT}/predict"
         model_response = requests.post(model_service_url, json={"text": user_input})
@@ -85,7 +90,7 @@ def user_input():
         predicted_label = "Positive" if predicted_number == 1 else "Negative"
 
         duration_pred_req = time.time() - start_dur_time
-        start_val_time = time.time()
+        session_start_times[session_id] = time.time()
         
         # # For frontend test
         # predicted_label = "Positive"  # Placeholder for actual prediction
@@ -110,21 +115,10 @@ def judgment():
     Endpoint to receive user feedback on the model's prediction.
     """
     try:
-        global duration_validation_req
-        global start_val_time
         global count_preds
         global count_correct_preds
         global count_incorrect_preds
         global hist_validation_pred_req
-
-        if start_val_time != 0:
-            duration_validation_req = time.time() - start_val_time
-            for bucket in hist_buckets:
-                if duration_validation_req <= bucket:
-                    hist_validation_pred_req[bucket] += 1
-                    break
-            hist_validation_pred_req["+Inf"] += 1
-            start_val_time = 0
 
         # Step 1: Extract the 'isCorrect' field from the request
         is_correct = request.json.get("isCorrect")
@@ -138,12 +132,29 @@ def judgment():
                 ),
                 400,
             )
+     
+        session_id = request.cookies.get("sessionId")
+        
+        # Check if session start time exists
+        start_time = session_start_times.pop(session_id, None)
+        if start_time is None:
+            return jsonify({
+                "status": "error",
+                "message": "Session expired or invalid."
+            }), 400
+        
+        validation_durations[session_id] = time.time() - start_time
+
+        for bucket in hist_buckets:
+            if validation_durations[session_id] <= bucket:
+                hist_validation_pred_req[bucket] += 1
+                break
+        hist_validation_pred_req["+Inf"] += 1
 
         if is_correct:
             count_correct_preds += 1
         else:
-
-         count_incorrect_preds += 1
+            count_incorrect_preds += 1
         count_preds += 1
 
         # Step 2: Return a success response
@@ -168,8 +179,9 @@ def metrics():
     global count_correct_preds
     global count_incorrect_preds
     global duration_pred_req
-    global duration_validation_req
     global hist_validation_pred_req
+
+    session_id = request.cookies.get("sessionId")
 
     m = "# HELP count_reqs The number of requests that have been created for sentiment prediction of a review.\n"
     m += "# TYPE count_reqs counter\n"
@@ -193,7 +205,7 @@ def metrics():
 
     m += "# HELP duration_validation_req How long in seconds it take the person to validate the sentiment of a review.\n"
     m += "# TYPE duration_validation_req gauge\n"
-    m += f'duration_validation_req{{version="{app_UI_version}"}} {duration_validation_req}\n\n'
+    m += f'duration_validation_req{{version="{app_UI_version}"}} {validation_durations[session_id]}\n\n'
 
     m += "# HELP hist_duration_pred_req Histogram of the duration of the prediction request.\n"
     m += "# TYPE hist_duration_pred_req histogram\n"

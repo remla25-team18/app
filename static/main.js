@@ -7,6 +7,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const feedbackNo = document.getElementById("feedback-no");
     const resultDiv = document.getElementById("result");
 
+    if (!document.cookie.includes("sessionId")) {
+      const sessionId = crypto.randomUUID();
+      document.cookie = `sessionId=${sessionId}; path=/; SameSite=Lax`;
+    }
+
     feedbackYes.disabled = true;
     feedbackNo.disabled = true;
   
