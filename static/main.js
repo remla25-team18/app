@@ -9,12 +9,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     let sessionId;
 
-    if (!document.cookie.includes("sessionId")) {
-      sessionId = crypto.randomUUID();
-      document.cookie = `sessionId=${sessionId}; path=/; SameSite=Lax`;
-    }
-
-    console.log(sessionId);
+    // a new sessionId is created for each page load
+    sessionId = crypto.randomUUID();
+    document.cookie = `sessionId=${sessionId}; path=/; SameSite=Lax`;
 
     feedbackYes.disabled = true;
     feedbackNo.disabled = true;
