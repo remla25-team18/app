@@ -27,18 +27,21 @@ hist_buckets = [0.1, 1, 3, 5, 10]
 hist_validation_pred_req = defaultdict(int)
 
 
+# ---
+# summary: Render the frontend HTML page
+# description: Fetches model version and renders the main HTML template.
+# operationId: renderFrontend
+# responses:
+#   200:
+#     description: Successfully rendered page
 @main.route("/", methods=["GET"])
 def index():
     try:
-        # Fetch the model version from the /version endpoint of the model-service
         model_service_url = f"http://{DNS}:{MODEL_PORT}/version"
         response = requests.get(model_service_url)
-        response.raise_for_status()  # Raise an error for non-2xx responses
-
-        # Extract the model version from the response
+        response.raise_for_status()
         model_version = response.json().get("version", "Unknown")
     except requests.exceptions.RequestException as e:
-        # Handle errors from the model-service
         print(f"Error fetching model version: {e}")
         model_version = "Unavailable"
 
@@ -51,6 +54,34 @@ def index():
     )
 
 
+# ---
+# summary: Submit text input for sentiment prediction
+# description: Forwards user input to the model-service and returns the predicted sentiment label.
+# operationId: postUserInput
+# parameters:
+#   - name: text
+#     in: body
+#     description: Text input from the user
+#     required: true
+#     schema:
+#       type: object
+#       required:
+#         - text
+#       properties:
+#         text:
+#           type: string
+# responses:
+#   200:
+#     description: Successfully received prediction
+#     schema:
+#       type: object
+#       properties:
+#         label:
+#           type: string
+#   400:
+#     description: Missing text in request body
+#   500:
+#     description: Internal or model service error
 @main.route("/userInput", methods=["POST"])
 def user_input():
     """
@@ -66,44 +97,56 @@ def user_input():
 
         start_dur_time = time.time()
 
-        # Step 1: Extract user input from the request
         user_input = request.json.get("text")
         if not user_input:
             return jsonify({"error": "Missing 'text' in request body"}), 400
 
-        # Step 2: Send request to model-service
         model_service_url = f"http://{DNS}:{MODEL_PORT}/predict"
         model_response = requests.post(model_service_url, json={"text": user_input})
-        model_response.raise_for_status()  # Raise an error for non-2xx responses
+        model_response.raise_for_status()
 
-        # Step 3: Extract the prediction and model version
         model_data = model_response.json()
         predicted_number = model_data.get("prediction")
         model_version = model_data.get("version")
 
-        # Map the prediction number to a label
         predicted_label = "Positive" if predicted_number == 1 else "Negative"
 
         duration_pred_req = time.time() - start_dur_time
         start_val_time = time.time()
-        
-        # # For frontend test
-        # predicted_label = "Positive"  # Placeholder for actual prediction
-        # model_version = "v1.0"  # Placeholder for actual model version
 
-        # Step 4: Send the label and model version back to the frontend
         return jsonify({"label": predicted_label})
 
     except requests.exceptions.RequestException as e:
-        # Handle errors from the model-service
         print(f"Error communicating with model-service: {e}")
         return jsonify({"error": "Model service failed"}), 500
     except Exception as e:
-        # Handle other errors
         print(f"Unexpected error: {e}")
         return jsonify({"error": "Internal server error"}), 500
 
 
+# ---
+# summary: Submit judgment for model prediction
+# description: Accepts boolean user feedback indicating whether the prediction was correct.
+# operationId: postJudgment
+# parameters:
+#   - name: isCorrect
+#     in: body
+#     description: Boolean indicating correctness of prediction
+#     required: true
+#     schema:
+#       type: object
+#       required:
+#         - isCorrect
+#       properties:
+#         isCorrect:
+#           type: boolean
+# responses:
+#   200:
+#     description: Judgment recorded successfully
+#   400:
+#     description: Invalid judgment format
+#   500:
+#     description: Internal server error
 @main.route("/judgment", methods=["POST"])
 def judgment():
     """
@@ -126,7 +169,6 @@ def judgment():
             hist_validation_pred_req["+Inf"] += 1
             start_val_time = 0
 
-        # Step 1: Extract the 'isCorrect' field from the request
         is_correct = request.json.get("isCorrect")
         if not isinstance(is_correct, bool):
             return (
@@ -142,11 +184,9 @@ def judgment():
         if is_correct:
             count_correct_preds += 1
         else:
-
-         count_incorrect_preds += 1
+            count_incorrect_preds += 1
         count_preds += 1
 
-        # Step 2: Return a success response
         return jsonify(
             {
                 "status": "success",
@@ -156,11 +196,19 @@ def judgment():
         )
 
     except Exception as e:
-        # Handle unexpected errors
         print(f"Unexpected error: {e}")
         return jsonify({"error": "Internal server error"}), 500
 
 
+# ---
+# summary: Expose application metrics
+# description: Returns Prometheus-compatible metrics for prediction statistics and timing.
+# operationId: getMetrics
+# produces:
+#   - text/plain
+# responses:
+#   200:
+#     description: Plain-text Prometheus metrics
 @main.route("/metrics", methods=["GET"])
 def metrics():
     global count_reqs
@@ -198,14 +246,10 @@ def metrics():
     m += "# HELP hist_duration_pred_req Histogram of the duration of the prediction request.\n"
     m += "# TYPE hist_duration_pred_req histogram\n"
     cumulative = 0
-
-    cumulative = 0
     for bucket in hist_buckets:
         cumulative += hist_validation_pred_req[bucket]
         m += f'hist_duration_pred_req{{le="{bucket}", version="{app_UI_version}"}} {cumulative}\n'
-        prev_bucket = bucket
 
-    # Add +Inf bucket
     cumulative += hist_validation_pred_req["+Inf"]
     m += f'hist_duration_pred_req{{le="+Inf", version="{app_UI_version}"}} {cumulative}\n'
 
