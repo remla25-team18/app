@@ -20,6 +20,12 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
 
+      - name: Set git remote env variable
+        if: ${{ !startsWith(steps.tagmsg.outputs.message, 'Bump version') }}
+        run: |
+          REMOTE_REPO="https://${GITHUB_ACTOR}:${{ secrets.GH_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git"
+          echo "remote_repo=$REMOTE_REPO" >> $GITHUB_ENV
+          
       - name: Install GitVersion
         uses: gittools/actions/gitversion/setup@v3.2.1
         with:
