@@ -1,0 +1,17 @@
+# GitVersion configuration file
+# This file is used by GitVersion to determine the versioning strategy for the project.
+# It specifies how versions are incremented based on branch names and commit messages.
+# For more information, see https://gitversion.net/docs/reference/configuration
+
+mode: ContinuousDelivery
+next-version: 0.2.12-pre
+commit-message-incrementing: Enabled
+branches:
+  main:
+    regex: ^main$
+    increment: Patch
+    is-mainline: true
+    track-merge-target: false
+    prevent-increment-of-merged-branch-version: true
+    tag: 'pre'
+    pre-release-weight: 1
