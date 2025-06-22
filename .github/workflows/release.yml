@@ -123,6 +123,6 @@ jobs:
 
           docker buildx build \
             --platform linux/amd64,linux/arm64 \
-            --tag $IMG:${{steps.get_tag.outputs.VERSION}} \
+            --tag $IMG:${{ steps.gitversion.outputs.semVer }} \
             --push \
             .
