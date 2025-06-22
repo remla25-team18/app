@@ -6,7 +6,9 @@ import time
 from collections import defaultdict
 
 main = Blueprint("main", __name__)
-app_version = VersionUtil.get_version()
+version_file = open("VERSION", "r")
+app_version = version_file.read().strip()  # v1.0.17
+version_file.close()
 
 # Environment variables
 FRONTEND_PORT = os.getenv("FRONTEND_PORT", "4200")
