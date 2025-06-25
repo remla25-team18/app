@@ -68,7 +68,8 @@ jobs:
         run: |
           git add VERSION
           git commit -m "Update VERSION file [skip ci]" || echo "No changes to commit"
-          git push "${{ env.remote_repo }}" HEAD:main
+          git push "${{ env.remote_repo }}" HEAD:global-var
+
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
@@ -93,7 +94,7 @@ jobs:
           sed -i "s/^next-version: .*/next-version: $NEXT_VERSION/" GitVersion.yml
           git add GitVersion.yml
           git commit -m "Bump next-version to $NEXT_VERSION [skip ci]" || echo "No changes to commit"
-          git push "${{ env.remote_repo }}" HEAD:main
+          git push "${{ env.remote_repo }}" HEAD:global-var
 
 
       # Build and push Docker images
@@ -141,7 +142,7 @@ jobs:
         id: updated_tag
         run: |
           git fetch --all
-          git checkout main
+          git checkout global-var
 
           IFS='.' read -r MAJOR MINOR PATCH <<< "${{steps.get_tag.outputs.VERSION}}"
           NEW_PATCH=$((PATCH + 1))
@@ -152,4 +153,4 @@ jobs:
 
           git add VERSION
           git commit -m "Bump version"
-          git push origin HEAD:main
+          git push origin HEAD:global-var
