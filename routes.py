@@ -14,8 +14,8 @@ version_file.close()
 FRONTEND_PORT = os.getenv("FRONTEND_PORT", "4200")
 MODEL_PORT = os.getenv("MODEL_PORT", "5050")
 DNS = os.getenv("DNS", "localhost")
-use_true_false_classes = os.getenv("USE_TRUE_FALSE_CLASSES", "true") == "true"
-app_UI_version = "v2.0" if use_true_false_classes else "v1.0"
+enable_colorful_feedback_btns = os.getenv("COLORFUL_BUTTONS", "true") == "true"
+app_UI_version = "v1.0" if enable_colorful_feedback_btns else "v2.0"
 
 count_reqs = 0
 count_preds = 0
@@ -50,7 +50,7 @@ def index():
     return render_template(
         "main.html",
         title="Team18 Frontend",
-        use_true_false_classes=use_true_false_classes,
+        enable_colorful_feedback_btns=enable_colorful_feedback_btns,
         app_version=app_version,
         model_service_version=model_version,
     )
@@ -199,8 +199,7 @@ def judgment():
 
     except Exception as e:
         print(f"Unexpected error: {e}")
-        return jsonify({"error": "Internal server error"}), 500
-
+        return jsonify({"error": "Internal server error"}), 
 
 # ---
 # summary: Expose application metrics
