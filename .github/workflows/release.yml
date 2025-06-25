@@ -126,3 +126,30 @@ jobs:
             --tag $IMG:${{ steps.gitversion.outputs.semVer }} \
             --push \
             .
+
+      # - name: Delete previous tag
+      #   run: |
+      #     IFS='.' read -r MAJOR MINOR PATCH <<< "${{steps.get_tag.outputs.VERSION}}"
+      #     PREV_PATCH=$((PATCH - 1))
+      #     PREV_TAG="v$MAJOR.$MINOR.$PREV_PATCH"
+          
+      #     git tag --delete ${PREV_TAG}
+      #     git push "${{ env.remote_repo }}" --delete ${PREV_TAG}
+      #     git tag -l
+
+      - name: Update tag
+        id: updated_tag
+        run: |
+          git fetch --all
+          git checkout main
+
+          IFS='.' read -r MAJOR MINOR PATCH <<< "${{steps.get_tag.outputs.VERSION}}"
+          NEW_PATCH=$((PATCH + 1))
+          echo "v$MAJOR.$MINOR.${NEW_PATCH}-pre" > VERSION
+
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+          git add VERSION
+          git commit -m "Bump version"
+          git push origin HEAD:main
