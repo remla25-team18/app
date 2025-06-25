@@ -24,6 +24,9 @@ count_preds = 0
 count_correct_preds = 0
 count_incorrect_preds = 0
 duration_pred_req = 0.0
+latest_pred_duration = 0.0
+latest_validation_duration = 0.0
+
 # Histogram config
 hist_buckets = [0.1, 1, 3, 5, 10]
 hist_validation_pred_req = defaultdict(int)
@@ -91,26 +94,16 @@ def index():
 #     description: Internal or model service error
 @main.route("/userInput", methods=["POST"])
 def user_input():
-    """
-    Endpoint to receive user input and forward it to the model-service.
-    """
     try:
-        global count_reqs
-        global duration_pred_req
-
+        global count_reqs, latest_pred_duration
         count_reqs += 1
-        duration_pred_req = 1
 
-        start_dur_time = time.time()
-
+        start_time = time.time()
         user_input = request.json.get("text")
         if not user_input:
             return jsonify({"error": "Missing 'text' in request body"}), 400
 
         session_id = request.cookies.get("sessionId")
-
-        # logger.info(f"Got session_id from cookie: {session_id}")
-        # logger.info(f"All session_start_times keys: {list(session_start_times.keys())}")
 
         model_service_url = f"http://{DNS}:{MODEL_PORT}/predict"
         model_response = requests.post(model_service_url, json={"text": user_input})
@@ -118,21 +111,12 @@ def user_input():
 
         model_data = model_response.json()
         predicted_number = model_data.get("prediction")
-        model_version = model_data.get("version")
-
         predicted_label = "Positive" if predicted_number == 1 else "Negative"
 
-        duration_pred_req = time.time() - start_dur_time
-        session_start_times[session_id] = time.time()
+        latest_pred_duration = time.time() - start_time
+        if session_id:
+            session_start_times[session_id] = time.time()
 
-        # logger.info(f"Add entry: {list(session_start_times.keys())}")
-        # logger.info(f"Start time: {session_start_times[session_id]}")
-
-        # # For frontend test
-        # predicted_label = "Positive"  # Placeholder for actual prediction
-        # model_version = "v1.0"  # Placeholder for actual model version
-
-        # Step 4: Send the label and model version back to the frontend
         return jsonify({"label": predicted_label})
 
     except requests.exceptions.RequestException as e:
@@ -168,23 +152,8 @@ def user_input():
 #     description: Internal server error
 @main.route("/judgment", methods=["POST"])
 def judgment():
-    """
-    Endpoint to receive user feedback on the model's prediction.
-    """
     try:
-        global count_preds
-        global count_correct_preds
-        global count_incorrect_preds
-        global hist_validation_pred_req
-
-        if start_val_time != 0:
-            duration_validation_req = time.time() - start_val_time
-            for bucket in hist_buckets:
-                if duration_validation_req <= bucket:
-                    hist_validation_pred_req[bucket] += 1
-                    break
-            hist_validation_pred_req["+Inf"] += 1
-            start_val_time = 0
+        global count_preds, count_correct_preds, count_incorrect_preds, latest_validation_duration
 
         is_correct = request.json.get("isCorrect")
         if not isinstance(is_correct, bool):
@@ -199,10 +168,6 @@ def judgment():
             )
 
         session_id = request.cookies.get("sessionId")
-
-        # logger.info(f"Confirm session_id from cookie: {session_id}")
-
-        # Check if session start time exists
         start_time = session_start_times.get(session_id)
         if start_time is None:
             return (
@@ -211,13 +176,12 @@ def judgment():
             )
 
         now = time.time()
-        validation_durations[session_id] = now - start_time
-        # logger.info(f"now: {now}")
-        # logger.info(f"start time: {start_time}")
-        # logger.info(f"duration: {validation_durations[session_id]}")
+        duration = now - start_time
+        validation_durations[session_id] = duration
+        latest_validation_duration = duration
 
         for bucket in hist_buckets:
-            if validation_durations[session_id] <= bucket:
+            if duration <= bucket:
                 hist_validation_pred_req[bucket] += 1
                 break
         hist_validation_pred_req["+Inf"] += 1
@@ -238,7 +202,7 @@ def judgment():
 
     except Exception as e:
         print(f"Unexpected error: {e}")
-        return (jsonify({"error": "Internal server error"}),)
+        return jsonify({"error": "Internal server error"}), 500
 
 
 # ---
@@ -252,16 +216,8 @@ def judgment():
 #     description: Plain-text Prometheus metrics
 @main.route("/metrics", methods=["GET"])
 def metrics():
-    global count_reqs
-    global count_preds
-    global count_correct_preds
-    global count_incorrect_preds
-    global duration_pred_req
-    global hist_validation_pred_req
-
-    session_id = request.cookies.get("sessionId")
-
-    m = "# HELP count_reqs The number of requests that have been created for sentiment prediction of a review.\n"
+    m = ""
+    m += "# HELP count_reqs The number of requests that have been created for sentiment prediction of a review.\n"
     m += "# TYPE count_reqs counter\n"
     m += f'count_reqs{{version="{app_UI_version}"}} {count_reqs}\n\n'
 
@@ -273,22 +229,17 @@ def metrics():
     m += "# TYPE count_correct_preds counter\n"
     m += f'count_correct_preds{{version="{app_UI_version}"}} {count_correct_preds}\n\n'
 
-    m += "# HELP count_incorrect_preds The number of incorrect sentiment analysis predictions  according to the user.\n"
+    m += "# HELP count_incorrect_preds The number of incorrect sentiment analysis predictions according to the user.\n"
     m += "# TYPE count_incorrect_preds counter\n"
     m += f'count_incorrect_preds{{version="{app_UI_version}"}} {count_incorrect_preds}\n\n'
 
     m += "# HELP duration_pred_req How long in seconds it takes predict the sentiment of a review.\n"
     m += "# TYPE duration_pred_req gauge\n"
-    m += f'duration_pred_req{{version="{app_UI_version}"}} {duration_pred_req}\n\n'
+    m += f'duration_pred_req{{version="{app_UI_version}"}} {latest_pred_duration}\n\n'
 
-    m += "# HELP duration_validation_req How long in seconds it take the person to validate the sentiment of a review.\n"
+    m += "# HELP duration_validation_req How long in seconds it takes the person to validate the sentiment of a review.\n"
     m += "# TYPE duration_validation_req gauge\n"
-
-    duration_val = validation_durations.get(session_id)
-    if duration_val is not None:
-        m += f'duration_validation_req{{version="{app_UI_version}"}} {duration_val}\n\n'
-    else:
-        m += f'duration_validation_req{{version="{app_UI_version}"}} 0.0\n\n'
+    m += f'duration_validation_req{{version="{app_UI_version}"}} {latest_validation_duration}\n\n'
 
     m += "# HELP hist_duration_pred_req Histogram of the duration of the prediction request.\n"
     m += "# TYPE hist_duration_pred_req histogram\n"
@@ -296,10 +247,8 @@ def metrics():
     for bucket in hist_buckets:
         cumulative += hist_validation_pred_req[bucket]
         m += f'hist_duration_pred_req{{le="{bucket}", version="{app_UI_version}"}} {cumulative}\n'
-
     cumulative += hist_validation_pred_req["+Inf"]
     m += f'hist_duration_pred_req{{le="+Inf", version="{app_UI_version}"}} {cumulative}\n'
 
     print(m)
-
     return Response(m, mimetype="text/plain")
