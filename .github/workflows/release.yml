@@ -2,18 +2,101 @@ name: Release
 
 on:
   push:
-    tags:
-      - "v*.*.*"
+    branches:
+      - global-var
 
 jobs:
   release:
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.latest_stable.outputs.tag }}
     steps:
+      # Update version
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GH_TOKEN }}
           fetch-depth: 0
+          fetch-tags: true
+
+      - name: Set git remote env variable
+        if: ${{ !startsWith(steps.tagmsg.outputs.message, 'Bump version') }}
+        run: |
+          REMOTE_REPO="https://${GITHUB_ACTOR}:${{ secrets.GH_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git"
+          echo "remote_repo=$REMOTE_REPO" >> $GITHUB_ENV
+          
+      - name: Install GitVersion
+        uses: gittools/actions/gitversion/setup@v3.2.1
+        with:
+          versionSpec: "5.12.0"
+
+      - name: Fetch all history for all tags and branches
+        run: git fetch --prune --tags
+
+      - name: Run GitVersion
+        id: gitversion
+        uses: gittools/actions/gitversion/execute@v3.2.1
+        with:
+          useConfigFile: true
+          configFilePath: GitVersion.yml
+
+      # Logging GitVersion outputs
+      - name: Check GitVersion Output File
+        if: failure()
+        run: cat GitVersionOutput.json || echo "No GitVersionOutput.json found"
+
+      # Mostly for debugging purposes, can be removed later
+      - name: Output GitVersion info
+        run: |
+          echo "GitVersion Output:"
+          echo "Full SemVer: ${{ steps.gitversion.outputs.SemVer }}"
+          echo "Major: ${{ steps.gitversion.outputs.Major }}"
+          echo "Minor: ${{ steps.gitversion.outputs.Minor }}"
+          echo "Patch: ${{ steps.gitversion.outputs.Patch }}"
+          echo "Pre-release tag: ${{ steps.gitversion.outputs.PreReleaseTag }}"
+
+      - name: Write version to VERSION file
+        run: echo "${{ steps.gitversion.outputs.semVer }}" > VERSION
+
+      - name: Set up Git config
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+      - name: Commit and push VERSION file
+        run: |
+          git add VERSION
+          git commit -m "Update VERSION file [skip ci]" || echo "No changes to commit"
+          git push "${{ env.remote_repo }}" HEAD:main
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          token: ${{ secrets.GH_TOKEN }}
+          tag_name: ${{ steps.gitversion.outputs.semVer }}
+          name: Release ${{ steps.gitversion.outputs.semVer }}
+          target_commitish: ${{ github.sha }}
+          generate_release_notes: true
+          prerelease: ${{ contains(steps.gitversion.outputs.semVer, '-') }}
+
+      - name: Bump next-version to pre-release
+        run: |
+          # Extract current version
+          VERSION="${{ steps.gitversion.outputs.SemVer }}"
+          # Split into major, minor, patch
+          IFS='.' read -r MAJOR MINOR PATCH <<<"${VERSION%%-*}"
+          # Increment patch
+          NEXT_PATCH=$((PATCH + 1))
+          NEXT_VERSION="$MAJOR.$MINOR.$NEXT_PATCH-pre"
+          # Update GitVersion.yml
+          sed -i "s/^next-version: .*/next-version: $NEXT_VERSION/" GitVersion.yml
+          git add GitVersion.yml
+          git commit -m "Bump next-version to $NEXT_VERSION [skip ci]" || echo "No changes to commit"
+          git push "${{ env.remote_repo }}" HEAD:main
+
+
+      # Build and push Docker images
 
       # QEMU is required for building multi-arch images
       - name: Set up QEMU
@@ -30,16 +113,6 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GH_TOKEN }}
 
-      - name: Set git remote env variable
-        if: ${{ !startsWith(steps.tagmsg.outputs.message, 'Bump version') }}
-        run: |
-          REMOTE_REPO="https://${GITHUB_ACTOR}:${{ secrets.GH_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git"
-          echo "remote_repo=$REMOTE_REPO" >> $GITHUB_ENV
-
-      - name: Extract version from tag
-        id: get_tag
-        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
-
       - name: Build, tag and push Docker images for different architectures
         run: |
           IMG="ghcr.io/${{ github.repository }}"
@@ -50,33 +123,6 @@ jobs:
 
           docker buildx build \
             --platform linux/amd64,linux/arm64 \
-            --tag $IMG:${{steps.get_tag.outputs.VERSION}} \
+            --tag $IMG:${{ steps.gitversion.outputs.semVer }} \
             --push \
             .
-
-      # - name: Delete previous tag
-      #   run: |
-      #     IFS='.' read -r MAJOR MINOR PATCH <<< "${{steps.get_tag.outputs.VERSION}}"
-      #     PREV_PATCH=$((PATCH - 1))
-      #     PREV_TAG="v$MAJOR.$MINOR.$PREV_PATCH"
-          
-      #     git tag --delete ${PREV_TAG}
-      #     git push "${{ env.remote_repo }}" --delete ${PREV_TAG}
-      #     git tag -l
-
-      - name: Update tag
-        id: updated_tag
-        run: |
-          git fetch --all
-          git checkout main
-
-          IFS='.' read -r MAJOR MINOR PATCH <<< "${{steps.get_tag.outputs.VERSION}}"
-          NEW_PATCH=$((PATCH + 1))
-          echo "v$MAJOR.$MINOR.${NEW_PATCH}-pre" > VERSION
-
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-
-          git add VERSION
-          git commit -m "Bump version"
-          git push origin HEAD:main
