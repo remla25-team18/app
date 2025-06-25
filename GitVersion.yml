@@ -4,7 +4,7 @@
 # For more information, see https://gitversion.net/docs/reference/configuration
 
 mode: ContinuousDelivery
-next-version: 1.0.114-pre
+next-version: 1.0.115-pre
 commit-message-incrementing: Enabled
 branches:
   main:
